@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบเสร็จอิเล็กทรอนิกส์</title>
+    <style>
+        /* สไตล์เดิม */
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select, button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .total {
+            text-align: right;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .alert {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ใบเสร็จอิเล็กทรอนิกส์</h1>
+
+    <div class="form-group">
+        <label for="companyName">ชื่อบริษัท:</label>
+        <input type="text" id="companyName" placeholder="กรอกชื่อบริษัท">
+    </div>
+
+    <div class="form-group">
+        <label for="date">วันที่:</label>
+        <input type="text" id="date" readonly>
+    </div>
+
+    <div class="form-group">
+        <label for="category">เลือกประเภท:</label>
+        <select id="category" onchange="populateItems()">
+            <option value="">-- เลือกประเภท --</option>
+            <option value="1">ทองแดง-ทองเหลือง</option>
+            <option value="2">เหล็ก</option>
+            <option value="3">อลูมิเนียม-สแตนเลส</option>
+            <option value="4">แบตเตอรี่-น้ำมันพืชเก่า</option>
+            <option value="5">พลาสติก</option>
+            <option value="6">เบียร์พร้อมลัง-เศษแก้ว</option>
+            <option value="7">ลัง-เศษกระดาษ</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="item">เลือกสินค้า:</label>
+        <select id="item">
+            <option value="">-- เลือกสินค้า --</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="weight">กรอกน้ำหนัก (กิโลกรัม):</label>
+        <input type="number" id="weight" placeholder="กรอกน้ำหนัก" min="0" step="0.01">
+    </div>
+
+    <button onclick="addItem()">เพิ่มรายการ</button>
+
+    <div class="alert" id="alertMessage"></div>
+
+    <h2>รายการสินค้า</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>สินค้า</th>
+                <th>ราคา/กก.</th>
+                <th>น้ำหนัก (กก.)</th>
+                <th>รวม</th>
+            </tr>
+        </thead>
+        <tbody id="receiptTable">
+        </tbody>
+    </table>
+
+    <h3 class="total">ยอดรวม: <span id="total">0</span> บาท</h3>
+
+    <button onclick="finishReceipt()">เสร็จสิ้น</button>
+    <button onclick="printReceipt()">พิมพ์ใบเสร็จ</button>
+</div>
+
+<script>
+    const items = {
+        1: {
+            "ทองแดงปอกใหญ่สายใหม่": 285,
+            "ทองแดงปอกเล็กสวยใส": 270,
+            "ทองแดงปอกช็อตดำ": 260,
+            "ทองแดงงมอเตอร์ท่อแอร์": 250,
+            "ทองแดงชุปขาว": 230,
+            "ทองแดงเข็มชุบ": 220,
+            "สายเดี่ยวNO. 2.5-4": 120,
+            "ทองเหลืองหนา": 160,
+            "ทองเหลืองบาง": 140,
+            "ทองเหลืองติดเหล็ก": 75
+        },
+        2: {
+            "เหล็กหนาสั้น": 10,
+            "เหล็กหนายาว": 9.50,
+            "เหล็กรวม-ม้วนกลม": 8.80,
+            "เหล็กบาง-ตะปู": 8,
+            "เหล็กหล่อ": 8,
+            "เหล็กโช๊ค": 7.50,
+            "ลวด": 6,
+            "สังกะสี-กะป๋องสังกะสี": 4.50,
+            "เมทัลชีท-ซีลาย": 7
+        },
+        3: {
+            "อลูมิเนียมหนา แกะ": 45,
+            "อลูมิเนียมบาง แกะ": 43,
+            "อลูมิเนียมฉาก แกะ": 60,
+            "อลูมิเนียมหนาเครื่อง แกะ": 48,
+            "อลูมิเนียมกระป๋อง": 60,
+            "อลูมิเนียมเพลท": 60,
+            "ล้อแม็กซ์": 68,
+            "เนียมหม้อน้ำ": 45,
+            "เนียมรังผึ้ง(ไส้ทองแดง)": 140,
+            "เนียมสายไฟ แกะ": 60,
+            "สแตนเลสแท้ 304 (ชิ้นเล็ก)": 36
+        },
+        4: {
+            "แบตน้ำขาว(ใหญ่)": 24.50,
+            "แบตดำ (เล็กแห้ง)": 25,
+            "น้ำมันพืช(แบบขวด)": 15,
+            "น้ำมันพืช(แบบปี๊ปใหม่)": 250
+        },
+        5: {
+            "พลาสติกเพทใส ไม่แกะ": 16,
+            "พลาสติกเพทใส แกะ": 17,
+            "แกลลอนนม": 13,
+            "แผ่น CD - DVD": 10,
+            "อะคริลิค": 10,
+            "พลาสติกกรอบ PS": 3,
+            "พลาสติกสี่รวม": 3,
+            "ถุงรวมซักสะอาด": 3,
+            "ท่อเหลือง": 4,
+            "ท่อฟ้า": 4,
+            "ข้อต่อ": 3.50
+        },
+        6: {
+            "เบียร์ลีโอ": 12,
+            "เบียร์ช้าง": 12,
+            "เบียร์สิงห์": 10,
+            "เบียร์ไฮเนเก้น": 18,
+            "เหล้าขาวเล็ก": 15,
+            "เหล้าขาวใหญ่": 13,
+            "แก้วขาว": 1.40,
+            "แก้วแดง": 1.20,
+            "แก้วรวม": 1
+        },
+        7: {
+            "หนังสือพิมพ์": 7,
+            "กระดาษขาวดำ A": 6,
+            "กระดาษขาวดำ B": 5,
+            "กระดาษลัง": 4,
+            "เล่มย่อย - จั๊บจั๊ว": 3,
+            "แกน - แผงไข่": 1.50,
+            "โบว์ชัวร์": 2.80
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const today = new Date().toISOString().split("T")[0];
+        document.getElementById("date").value = today;
+    });
+
+    function populateItems() {
+        const category = document.getElementById('category').value;
+        const itemSelect = document.getElementById('item');
+        itemSelect.innerHTML = '<option value="">-- เลือกสินค้า --</option>';
+        if (items[category]) {
+            Object.keys(items[category]).forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                itemSelect.appendChild(option);
+            });
+        }
+    }
+
+    function addItem() {
+        const itemSelect = document.getElementById('item');
+        const weightInput = document.getElementById('weight');
+        const categorySelect = document.getElementById('category');
+        const category = categorySelect.value;
+        const alertMessage = document.getElementById('alertMessage');
+
+        if (!itemSelect.value || !weightInput.value || !category) {
+            alertMessage.textContent = 'กรุณากรอกข้อมูลให้ครบถ้วน';
+            return;
+        }
+
+        alertMessage.textContent = '';
+
+        const pricePerKg = items[category][itemSelect.value];
+        const weight = parseFloat(weightInput.value);
+        const total = pricePerKg * weight;
+
+        const table = document.getElementById('receiptTable');
+        const row = table.insertRow();
+        row.insertCell(0).textContent = itemSelect.value;
+        row.insertCell(1).textContent = pricePerKg;
+        row.insertCell(2).textContent = weight;
+        row.insertCell(3).textContent = total.toFixed(2);
+
+        updateTotal(total);
+
+        // ล้างค่าในช่องประเภท, สินค้า และน้ำหนัก
+        categorySelect.value = '';
+        itemSelect.innerHTML = '<option value="">-- เลือกสินค้า --</option>';
+        weightInput.value = '';
+    }
+
+    function updateTotal(amount) {
+        const totalElement = document.getElementById('total');
+        const currentTotal = parseFloat(totalElement.textContent);
+        totalElement.textContent = (currentTotal + amount).toFixed(2);
+    }
+
+    function finishReceipt() {
+        const companyName = document.getElementById('companyName').value;
+        const total = document.getElementById('total').textContent;
+        const table = document.getElementById('receiptTable');
+
+        if (companyName === "") {
+            alert("กรุณากรอกชื่อบริษัทก่อนเสร็จสิ้น");
+            return;
+        }
+
+        // แสดงข้อมูลใบเสร็จ
+        let receiptContent = `บริษัท: ${companyName}\nวันที่: ${document.getElementById('date').value}\n\n`;
+        receiptContent += "รายการสินค้า:\n";
+
+        for (let i = 0; i < table.rows.length; i++) {
+            const row = table.rows[i];
+            receiptContent += `${row.cells[0].textContent} | ${row.cells[1].textContent} บาท/กก. | ${row.cells[2].textContent} กก. | รวม: ${row.cells[3].textContent} บาท\n`;
+        }
+
+        receiptContent += `\nยอดรวม: ${total} บาท`;
+
+        alert(receiptContent);
+
+        // ล้างข้อมูลทั้งหมดหลังจากเสร็จสิ้น
+        document.getElementById('companyName').value = '';
+        document.getElementById('receiptTable').innerHTML = '';
+        document.getElementById('total').textContent = '0';
+    }
+
+    function printReceipt() {
+        const companyName = document.getElementById('companyName').value;
+        const total = document.getElementById('total').textContent;
+        const table = document.getElementById('receiptTable');
+
+        if (companyName === "") {
+            alert("กรุณากรอกชื่อบริษัทก่อนเสร็จสิ้น");
+            return;
+        }
+
+        // แสดงข้อมูลใบเสร็จ
+        let receiptContent = `บริษัท: ${companyName}\nวันที่: ${document.getElementById('date').value}\n\n`;
+        receiptContent += "รายการสินค้า:\n";
+
+        for (let i = 0; i < table.rows.length; i++) {
+            const row = table.rows[i];
+            receiptContent += `${row.cells[0].textContent} | ${row.cells[1].textContent} บาท/กก. | ${row.cells[2].textContent} กก. | รวม: ${row.cells[3].textContent} บาท\n`;
+        }
+
+        receiptContent += `\nยอดรวม: ${total} บาท`;
+
+        alert(receiptContent);
+
+        // ล้างข้อมูลทั้งหมดหลังจากเสร็จสิ้น
+        document.getElementById('companyName').value = '';
+        document.getElementById('receiptTable').innerHTML = '';
+        document.getElementById('total').textContent = '0';
+    }
+
+    function printReceipt() {
+        const companyName = document.getElementById('companyName').value;
+        const total = document.getElementById('total').textContent;
+        const table = document.getElementById('receiptTable');
+
+        if (companyName === "") {
+            alert("กรุณากรอกชื่อบริษัทก่อนพิมพ์ใบเสร็จ");
+            return;
+        }
+
+        let receiptContent = `
+            <h2>ใบเสร็จอิเล็กทรอนิกส์</h2>
+            <p><strong>บริษัท:</strong> ${companyName}</p>
+            <p><strong>วันที่:</strong> ${document.getElementById('date').value}</p>
+            <h3>รายการสินค้า</h3>
+            <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; text-align: center;">
+                <tr>
+                    <th>สินค้า</th>
+                    <th>ราคา/กก.</th>
+                    <th>น้ำหนัก (กก.)</th>
+                    <th>รวม</th>
+                </tr>
+        `;
+
+        for (let i = 0; i < table.rows.length; i++) {
+            const row = table.rows[i];
+            receiptContent += `
+                <tr>
+                    <td>${row.cells[0].textContent}</td>
+                    <td>${row.cells[1].textContent}</td>
+                    <td>${row.cells[2].textContent}</td>
+                    <td>${row.cells[3].textContent}</td>
+                </tr>
+            `;
+        }
+
+        receiptContent += `
+            </table>
+            <h3>ยอดรวม: ${total} บาท</h3>
+        `;
+
+        const newWindow = window.open('', '', 'width=600,height=400');
+        newWindow.document.write(receiptContent);
+        newWindow.document.close();
+        newWindow.print();
+    }
+</script>
+
+</body>
+</html>
